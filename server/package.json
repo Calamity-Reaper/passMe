@@ -4,6 +4,11 @@
   "description": "passMe project server",
   "main": "main.ts",
   "scripts": {
+    "build": "tsc",
+    "start": "node dist/main.js",
+    "dev": "nodemon",
+    "lint": "eslint ./src/**",
+    "lint:fix": "eslint ./src/** --fix",
     "test": "jest"
   },
   "author": "Illia Kokhanovkiy",
