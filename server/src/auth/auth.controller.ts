@@ -8,6 +8,7 @@ import { BaseController } from '../common/base.controller';
 import { ILoggerService } from '../logger/logger.service.interface';
 import { IAuthController } from './interfaces/auth.controller.interface';
 import { AuthLoginDto } from './dto/auth-login.dto';
+import { ValidateMiddleware } from '../common/middlewares/validate.middleware';
 
 @injectable()
 export class AuthController extends BaseController implements IAuthController {
@@ -17,8 +18,18 @@ export class AuthController extends BaseController implements IAuthController {
 	) {
 		super(loggerService);
 		this.bindRoutes([
-			{ method: 'post', path: '/register', func: this.registration },
-			{ method: 'post', path: '/login', func: this.login },
+			{
+				method: 'post',
+				path: '/register',
+				func: this.registration,
+				middlewares: [new ValidateMiddleware(AuthRegisterDto)],
+			},
+			{
+				method: 'post',
+				path: '/login',
+				func: this.login,
+				middlewares: [new ValidateMiddleware(AuthLoginDto)],
+			},
 			{ method: 'post', path: '/logout', func: this.logout },
 		]);
 	}
