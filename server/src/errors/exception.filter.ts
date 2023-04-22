@@ -1,10 +1,11 @@
 import { ILoggerService } from '../logger/logger.service.interface';
 import { DITypes } from '../DITypes';
-import { inject } from 'inversify';
+import { inject, injectable } from 'inversify';
 import { IExceptionFilter } from './exception.filter.interface';
 import { HttpError } from './http-error.class';
 import { NextFunction, Request, Response } from 'express';
 
+@injectable()
 export class ExceptionFilter implements IExceptionFilter {
 	constructor(@inject(DITypes.LoggerService) private LoggerService: ILoggerService) {}
 
