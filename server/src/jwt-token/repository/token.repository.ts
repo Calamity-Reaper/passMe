@@ -8,10 +8,11 @@ import { HttpError } from '../../errors/http-error.class';
 export class TokenRepository implements ITokenRepository {
 	constructor(@inject(DITypes.PrismaService) private prismaService: PrismaService) {}
 	async create(userId: number, refreshToken: string): Promise<void> {
-		await this.prismaService.client.token.upsert({
-			where: { userId },
-			update: { token: refreshToken },
-			create: { userId, token: refreshToken },
+		await this.prismaService.client.token.create({
+			data: {
+				userId,
+				token: refreshToken,
+			},
 		});
 	}
 	async updateOrCreateToken(userId: number, refreshToken: string): Promise<void> {
@@ -30,5 +31,9 @@ export class TokenRepository implements ITokenRepository {
 		} catch (e) {
 			throw new HttpError(422, 'No such token');
 		}
+	}
+
+	async findToken(refreshToken: string): Promise<boolean> {
+		return !!(await this.prismaService.client.token.findFirst({ where: { token: refreshToken } }));
 	}
 }

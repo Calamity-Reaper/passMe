@@ -14,12 +14,14 @@ import { IUsersService } from './users/interfaces/users.service.interface';
 import { PrismaService } from './database/prisma.service';
 import { UsersRepository } from './users/repository/users.repository';
 import { IUsersRepository } from './users/repository/users.repository.interface';
-import { ITokenRepository } from './auth/repository/token.repository.interface';
-import { TokenRepository } from './auth/repository/token.repository';
+import { ITokenRepository } from './jwt-token/repository/token.repository.interface';
+import { TokenRepository } from './jwt-token/repository/token.repository';
 import { IAuthService } from './auth/interfaces/auth.service.interface';
 import { AuthService } from './auth/auth.service';
 import { AuthController } from './auth/auth.controller';
 import { IAuthController } from './auth/interfaces/auth.controller.interface';
+import { TokenService } from './jwt-token/token.service';
+import { ITokenService } from './jwt-token/interfaces/token.service.interface';
 
 export const appBindings = new ContainerModule((bind: interfaces.Bind) => {
 	bind<App>(DITypes.Application).to(App).inSingletonScope();
@@ -33,4 +35,5 @@ export const appBindings = new ContainerModule((bind: interfaces.Bind) => {
 	bind<ITokenRepository>(DITypes.TokenRepository).to(TokenRepository).inSingletonScope();
 	bind<IAuthService>(DITypes.AuthService).to(AuthService).inSingletonScope();
 	bind<IAuthController>(DITypes.AuthController).to(AuthController).inSingletonScope();
+	bind<ITokenService>(DITypes.TokenService).to(TokenService).inSingletonScope();
 });

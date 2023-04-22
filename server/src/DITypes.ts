@@ -10,4 +10,5 @@ export const DITypes = {
 	TokenRepository: Symbol.for('TokenRepository'),
 	AuthService: Symbol.for('AuthService'),
 	AuthController: Symbol.for('AuthController'),
+	TokenService: Symbol.for('TokenService'),
 };

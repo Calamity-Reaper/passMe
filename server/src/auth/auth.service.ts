@@ -1,30 +1,21 @@
-import { JwtPayloadDto } from './dto/jwt-payload.dto';
 import { IConfigService } from '../config/config.service.interface';
 import { DITypes } from '../DITypes';
 import { inject, injectable } from 'inversify';
-import { sign } from 'jsonwebtoken';
-import { ITokenRepository } from './repository/token.repository.interface';
 import { AuthRegisterDto } from './dto/auth-register.dto';
 import { IUsersService } from '../users/interfaces/users.service.interface';
 import { compare, genSalt, hash } from 'bcryptjs';
-import { IAuthService, ILoginUser, ITokens } from './interfaces/auth.service.interface';
+import { IAuthService, ILoginUser } from './interfaces/auth.service.interface';
 import { AuthLoginDto } from './dto/auth-login.dto';
 import { HttpError } from '../errors/http-error.class';
+import { ITokenService } from '../jwt-token/interfaces/token.service.interface';
 
 @injectable()
 export class AuthService implements IAuthService {
 	constructor(
 		@inject(DITypes.ConfigService) private configService: IConfigService,
-		@inject(DITypes.TokenRepository) private tokenRepository: ITokenRepository,
 		@inject(DITypes.UsersService) private usersService: IUsersService,
+		@inject(DITypes.TokenService) private tokenService: ITokenService,
 	) {}
-	private generateTokens(payload: JwtPayloadDto): ITokens {
-		const access = sign(payload, this.configService.get('JWT_ACCESS_SECRET'), { expiresIn: '30m' });
-		const refresh = sign(payload, this.configService.get('JWT_REFRESH_SECRET'), {
-			expiresIn: '6h',
-		});
-		return { access, refresh };
-	}
 
 	private async hashPassword(password: string): Promise<string> {
 		const salt = Number(this.configService.get('SALT'));
@@ -44,8 +35,8 @@ export class AuthService implements IAuthService {
 		if (!user) {
 			throw new Error('User creation error');
 		}
-		const tokens = this.generateTokens({ id: user.id, email: user.email });
-		await this.tokenRepository.create(user.id, tokens.refresh);
+		const tokens = this.tokenService.generateTokens({ id: user.id, email: user.email });
+		await this.tokenService.addToken(user.id, tokens.refresh);
 		return {
 			user: {
 				email: user.email,
@@ -64,9 +55,9 @@ export class AuthService implements IAuthService {
 		if (!(await this.validatePassword(user.password, userData.password))) {
 			throw new HttpError(401, 'Incorrect email or password');
 		}
-		const tokens = this.generateTokens({ id: user.id, email: user.email });
+		const tokens = this.tokenService.generateTokens({ id: user.id, email: user.email });
 
-		await this.tokenRepository.updateOrCreateToken(user.id, tokens.refresh);
+		await this.tokenService.updateToken(user.id, tokens.refresh);
 		return {
 			user: {
 				email: user.email,
@@ -78,6 +69,29 @@ export class AuthService implements IAuthService {
 	}
 
 	async logoutUser(token: string): Promise<void> {
-		await this.tokenRepository.deleteToken(token);
+		await this.tokenService.deleteToken(token);
+	}
+
+	async refresh(token: string): Promise<ILoginUser> {
+		if (!token) {
+			throw new HttpError(401, 'User is not authorized');
+		}
+		const payload = this.tokenService.validateRefreshToken(token);
+		if (!payload || !(await this.tokenService.isTokenExist(token))) {
+			throw new HttpError(401, 'User is not authorized');
+		}
+		const user = await this.usersService.findByEmail(payload.email);
+		if (!user) {
+			throw new HttpError(401, 'User is not authorized');
+		}
+		const tokens = await this.tokenService.refreshTokens(token, { email: user.email, id: user.id });
+		return {
+			user: {
+				email: user.email,
+				firstName: user.firstName,
+				secondName: user.secondName,
+			},
+			...tokens,
+		};
 	}
 }

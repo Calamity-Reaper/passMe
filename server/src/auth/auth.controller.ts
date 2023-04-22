@@ -31,6 +31,7 @@ export class AuthController extends BaseController implements IAuthController {
 				middlewares: [new ValidateMiddleware(AuthLoginDto)],
 			},
 			{ method: 'post', path: '/logout', func: this.logout },
+			{ method: 'get', path: '/refresh', func: this.refresh },
 		]);
 	}
 	async registration({ body }: Request, res: Response, next: NextFunction): Promise<void> {
@@ -65,7 +66,21 @@ export class AuthController extends BaseController implements IAuthController {
 			const { refreshToken } = req.cookies;
 			await this.authService.logoutUser(refreshToken);
 			res.clearCookie('refreshToken');
-			res.status(200).json('');
+			res.status(200).json();
+		} catch (e) {
+			return next(e);
+		}
+	}
+
+	async refresh(req: Request, res: Response, next: NextFunction): Promise<void> {
+		try {
+			const { refreshToken } = req.cookies;
+			const userData = await this.authService.refresh(refreshToken);
+			res.cookie('refreshToken', userData.refresh, {
+				maxAge: 6 * 60 * 60 * 1000,
+				httpOnly: true,
+			});
+			res.status(200).json({ ...userData.user, accessToken: userData.access });
 		} catch (e) {
 			return next(e);
 		}
